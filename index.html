@@ -231,7 +231,7 @@
     <!-- 로그인 잠금 화면 -->
     <div id="loginView" class="card login-box">
       <h1>🔒 합동 비서실 입장</h1>
-      <p class="sub">비밀번호를 입력해야 채팅과 할 일 목록을 읽고 쓸 수 있습니다.</p>
+      <p class="sub">접속 아이디와 비밀번호를 입력해야 채팅과 할 일 목록을 읽고 쓸 수 있습니다.</p>
       <form id="loginForm">
         <label for="loginRole">접속자</label>
         <select id="loginRole">
@@ -239,6 +239,8 @@
           <option value="창민 피클">창민 피클</option>
           <option value="협업 피클">협업 피클</option>
         </select>
+        <label for="loginEmail">접속 아이디 (이메일)</label>
+        <input id="loginEmail" type="email" placeholder="아이디를 입력하세요" required autocomplete="username" />
         <label for="loginPassword">접속 비밀번호</label>
         <input id="loginPassword" type="password" placeholder="비밀번호를 입력하세요" required autocomplete="current-password" />
         <div style="margin-top: 14px;">
@@ -298,7 +300,6 @@
   <script>
     const SUPABASE_URL = "https://wrtsozqurfawpprbyplv.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Q6hlhuLDKnk8ixy-IXYlUw_8DC5OYfo";
-    const OFFICE_EMAIL = "office@pickle-family.local";
 
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -306,6 +307,7 @@
     const appView = document.getElementById("appView");
     const loginForm = document.getElementById("loginForm");
     const loginRole = document.getElementById("loginRole");
+    const loginEmail = document.getElementById("loginEmail");
     const loginPassword = document.getElementById("loginPassword");
     const loginError = document.getElementById("loginError");
     const loginBtn = document.getElementById("loginBtn");
@@ -353,7 +355,7 @@
         <div class="msg">
           <div class="msg-head">
             <span class="msg-sender">${escapeHtml(m.sender)}</span>
-            <span>${formatTime(m.created_at)} <button class="ghost" data-del-msg="${Number(m.id)}">삭제</button></span>
+            <span>${formatTime(m.created_at)}</span>
           </div>
           <div class="msg-body">${escapeHtml(m.content)}</div>
         </div>
@@ -378,30 +380,15 @@
           <input type="checkbox" data-toggle-todo="${Number(t.id)}" ${t.done ? "checked" : ""} />
           <span class="todo-title">${escapeHtml(t.title)}</span>
           <span class="todo-tag">${escapeHtml(t.assignee || "공통")}</span>
-          <button class="ghost" data-del-todo="${Number(t.id)}">삭제</button>
         </li>
       `).join("");
     }
-
-    chatList.addEventListener("click", async (e) => {
-      const btn = e.target.closest("[data-del-msg]");
-      if (!btn) return;
-      const id = Number(btn.getAttribute("data-del-msg"));
-      if (Number.isInteger(id)) await sb.from("messages").delete().eq("id", id);
-    });
 
     todoList.addEventListener("change", async (e) => {
       const cb = e.target.closest("[data-toggle-todo]");
       if (!cb) return;
       const id = Number(cb.getAttribute("data-toggle-todo"));
       if (Number.isInteger(id)) await sb.from("todos").update({ done: cb.checked }).eq("id", id);
-    });
-
-    todoList.addEventListener("click", async (e) => {
-      const btn = e.target.closest("[data-del-todo]");
-      if (!btn) return;
-      const id = Number(btn.getAttribute("data-del-todo"));
-      if (Number.isInteger(id)) await sb.from("todos").delete().eq("id", id);
     });
 
     function subscribeRealtime() {
@@ -440,14 +427,15 @@
       loginError.textContent = "";
       loginBtn.disabled = true;
       const { error } = await sb.auth.signInWithPassword({
-        email: OFFICE_EMAIL,
+        email: loginEmail.value.trim(),
         password: loginPassword.value
       });
       loginBtn.disabled = false;
       if (error) {
-        loginError.textContent = "비밀번호가 올바르지 않습니다.";
+        loginError.textContent = "아이디 또는 비밀번호가 올바르지 않습니다.";
         return;
       }
+      loginEmail.value = "";
       localStorage.setItem("office_sender", loginRole.value);
       await enterOffice();
     });
