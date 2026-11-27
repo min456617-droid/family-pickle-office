@@ -15,7 +15,6 @@
       --accent: #2f6fed;
       --accent-soft: #eef4ff;
       --danger: #d92d20;
-      --ok: #12b76a;
     }
     * { box-sizing: border-box; }
     body {
@@ -233,12 +232,11 @@
       <h1>🔒 합동 비서실 입장</h1>
       <p class="sub">비밀번호를 입력해야 채팅과 할 일 목록을 읽고 쓸 수 있습니다.</p>
       <form id="loginForm">
-        <label for="loginRole">접속자 이름</label>
+        <label for="loginRole">접속자</label>
         <select id="loginRole">
           <option value="창민">창민</option>
           <option value="창민 피클">창민 피클</option>
-          <option value="어머니">어머니</option>
-          <option value="어머니 피클">어머니 피클</option>
+          <option value="협업 피클">협업 피클</option>
         </select>
         <label for="loginPassword">접속 비밀번호</label>
         <input id="loginPassword" type="password" placeholder="비밀번호를 입력하세요" required autocomplete="current-password" />
@@ -254,14 +252,13 @@
       <div class="topbar card">
         <div>
           <h1>🥒 합동 비서실 <span class="badge">실시간 동기화</span></h1>
-          <p class="sub" style="margin: 2px 0 0;">어머니 피클과 함께 쓰는 채팅방 &amp; 할 일 목록</p>
+          <p class="sub" style="margin: 2px 0 0;">비서 협업 채팅방 &amp; 할 일 목록</p>
         </div>
         <div class="topbar-right">
           <select id="senderSelect" aria-label="보내는 사람">
             <option value="창민">창민</option>
             <option value="창민 피클">창민 피클</option>
-            <option value="어머니">어머니</option>
-            <option value="어머니 피클">어머니 피클</option>
+            <option value="협업 피클">협업 피클</option>
           </select>
           <button id="logoutBtn" class="secondary" type="button">나가기</button>
         </div>
@@ -287,8 +284,8 @@
             <select id="todoAssignee" style="width: auto;">
               <option value="공통">공통</option>
               <option value="창민">창민</option>
-              <option value="어머니">어머니</option>
-              <option value="피클">피클</option>
+              <option value="창민 피클">창민 피클</option>
+              <option value="협업 피클">협업 피클</option>
             </select>
             <button type="submit">추가</button>
           </form>
@@ -408,7 +405,10 @@
 
     async function enterOffice() {
       const savedSender = localStorage.getItem("office_sender");
-      if (savedSender) senderSelect.value = savedSender;
+      if (savedSender) {
+        const hasOption = Array.from(senderSelect.options).some((o) => o.value === savedSender);
+        if (hasOption) senderSelect.value = savedSender;
+      }
       loginView.classList.add("hidden");
       appView.classList.remove("hidden");
       await Promise.all([loadMessages(), loadTodos()]);
