@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; connect-src https://wrtsozqurfawpprbyplv.supabase.co wss://wrtsozqurfawpprbyplv.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self';" />
   <title>합동 비서실 · 채팅 &amp; 할 일</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -270,7 +271,7 @@
           <h2>💬 비서실 채팅</h2>
           <div id="chatList" class="chat-list"></div>
           <form id="chatForm" class="row-form">
-            <input id="chatInput" type="text" placeholder="메시지를 입력하세요..." required />
+            <input id="chatInput" type="text" maxlength="1000" placeholder="메시지를 입력하세요..." required />
             <button type="submit">전송</button>
           </form>
         </section>
@@ -280,7 +281,7 @@
           <h2>✅ 할 일 목록</h2>
           <ul id="todoList" class="todo-list"></ul>
           <form id="todoForm" class="row-form" style="flex-wrap: wrap;">
-            <input id="todoInput" type="text" placeholder="새 할 일을 입력하세요..." required style="min-width: 160px;" />
+            <input id="todoInput" type="text" maxlength="200" placeholder="새 할 일을 입력하세요..." required style="min-width: 160px;" />
             <select id="todoAssignee" style="width: auto;">
               <option value="공통">공통</option>
               <option value="창민">창민</option>
@@ -352,7 +353,7 @@
         <div class="msg">
           <div class="msg-head">
             <span class="msg-sender">${escapeHtml(m.sender)}</span>
-            <span>${formatTime(m.created_at)} <button class="ghost" onclick="deleteMessage(${m.id})">삭제</button></span>
+            <span>${formatTime(m.created_at)} <button class="ghost" data-del-msg="${Number(m.id)}">삭제</button></span>
           </div>
           <div class="msg-body">${escapeHtml(m.content)}</div>
         </div>
@@ -374,25 +375,34 @@
       }
       todoList.innerHTML = data.map((t) => `
         <li class="todo-item ${t.done ? "done" : ""}">
-          <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTodo(${t.id}, this.checked)" />
+          <input type="checkbox" data-toggle-todo="${Number(t.id)}" ${t.done ? "checked" : ""} />
           <span class="todo-title">${escapeHtml(t.title)}</span>
           <span class="todo-tag">${escapeHtml(t.assignee || "공통")}</span>
-          <button class="ghost" onclick="deleteTodo(${t.id})">삭제</button>
+          <button class="ghost" data-del-todo="${Number(t.id)}">삭제</button>
         </li>
       `).join("");
     }
 
-    window.deleteMessage = async (id) => {
-      await sb.from("messages").delete().eq("id", id);
-    };
+    chatList.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-del-msg]");
+      if (!btn) return;
+      const id = Number(btn.getAttribute("data-del-msg"));
+      if (Number.isInteger(id)) await sb.from("messages").delete().eq("id", id);
+    });
 
-    window.toggleTodo = async (id, done) => {
-      await sb.from("todos").update({ done }).eq("id", id);
-    };
+    todoList.addEventListener("change", async (e) => {
+      const cb = e.target.closest("[data-toggle-todo]");
+      if (!cb) return;
+      const id = Number(cb.getAttribute("data-toggle-todo"));
+      if (Number.isInteger(id)) await sb.from("todos").update({ done: cb.checked }).eq("id", id);
+    });
 
-    window.deleteTodo = async (id) => {
-      await sb.from("todos").delete().eq("id", id);
-    };
+    todoList.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-del-todo]");
+      if (!btn) return;
+      const id = Number(btn.getAttribute("data-del-todo"));
+      if (Number.isInteger(id)) await sb.from("todos").delete().eq("id", id);
+    });
 
     function subscribeRealtime() {
       if (channel) sb.removeChannel(channel);
