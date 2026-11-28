@@ -66,7 +66,7 @@
     input, select, button {
       font: inherit;
     }
-    input[type="password"], input[type="text"], select {
+    input[type="password"], input[type="text"], input[type="email"], select {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border);
@@ -301,7 +301,13 @@
     const SUPABASE_URL = "https://wrtsozqurfawpprbyplv.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Q6hlhuLDKnk8ixy-IXYlUw_8DC5OYfo";
 
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+      }
+    });
 
     const loginView = document.getElementById("loginView");
     const appView = document.getElementById("appView");
@@ -445,7 +451,7 @@
     });
 
     logoutBtn.addEventListener("click", async () => {
-      await sb.auth.signOut();
+      await sb.auth.signOut({ scope: "local" });
       leaveOffice();
     });
 
@@ -463,6 +469,22 @@
       if (!title) return;
       todoInput.value = "";
       await sb.from("todos").insert({ title, assignee: todoAssignee.value, done: false });
+    });
+
+    sb.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        leaveOffice();
+      } else if (event === "TOKEN_REFRESHED" && session) {
+        if (appView.classList.contains("hidden")) {
+          enterOffice();
+        }
+      }
+    });
+
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible" && !appView.classList.contains("hidden")) {
+        await Promise.all([loadMessages(), loadTodos()]);
+      }
     });
 
     (async () => {
